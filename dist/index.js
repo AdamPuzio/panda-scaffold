@@ -54140,10 +54140,9 @@ var convertHslToRgb = (hsl) => {
 var Command = (_class3 = class {
   
   
-  __init6() {this.title = ""}
-  __init7() {this.description = ""}
+  __init6() {this.description = ""}
   
-  
+  __init7() {this.helpTitle = ""}
   
   
   
@@ -54152,18 +54151,21 @@ var Command = (_class3 = class {
   __init10() {this.prompts = []}
   __init11() {this.promptTypes = {}}
   __init12() {this.fun = true}
-  __init13() {this._arguments = []}
-  __init14() {this._options = []}
-  __init15() {this._commandStack = []}
-  __init16() {this._subcommands = {}}
-  __init17() {this._type = "command"}
+  __init13() {this.silent = false}
+  __init14() {this.hidden = false}
+  __init15() {this.autoHelp = true}
+  __init16() {this._arguments = []}
+  __init17() {this._options = []}
+  __init18() {this._commandStack = []}
+  __init19() {this._subcommands = {}}
+  __init20() {this._type = "command"}
   /**
    * Command constructor
    *
    * @param {object} cfg  Configuration object
    * @returns {Command} Command instance (for chainability)
    */
-  constructor(cfg) {;_class3.prototype.__init6.call(this);_class3.prototype.__init7.call(this);_class3.prototype.__init8.call(this);_class3.prototype.__init9.call(this);_class3.prototype.__init10.call(this);_class3.prototype.__init11.call(this);_class3.prototype.__init12.call(this);_class3.prototype.__init13.call(this);_class3.prototype.__init14.call(this);_class3.prototype.__init15.call(this);_class3.prototype.__init16.call(this);_class3.prototype.__init17.call(this);_class3.prototype.__init18.call(this);_class3.prototype.__init19.call(this);_class3.prototype.__init20.call(this);_class3.prototype.__init21.call(this);
+  constructor(cfg) {;_class3.prototype.__init6.call(this);_class3.prototype.__init7.call(this);_class3.prototype.__init8.call(this);_class3.prototype.__init9.call(this);_class3.prototype.__init10.call(this);_class3.prototype.__init11.call(this);_class3.prototype.__init12.call(this);_class3.prototype.__init13.call(this);_class3.prototype.__init14.call(this);_class3.prototype.__init15.call(this);_class3.prototype.__init16.call(this);_class3.prototype.__init17.call(this);_class3.prototype.__init18.call(this);_class3.prototype.__init19.call(this);_class3.prototype.__init20.call(this);_class3.prototype.__init21.call(this);_class3.prototype.__init22.call(this);_class3.prototype.__init23.call(this);_class3.prototype.__init24.call(this);
     this.init(cfg);
     return this;
   }
@@ -54176,29 +54178,34 @@ var Command = (_class3 = class {
   init(cfg) {
     if (!cfg.command)
       cfg.command = cfg.name;
-    Object.entries(cfg).forEach(([key, value]) => {
-      this[key] = value;
-    });
+    Object.entries(cfg).forEach(([key, value]) => this[key] = value);
     this._commandStack.push(cfg.command);
     const usage = CommandParser.parseUsage(cfg.usage);
-    const opts = [].concat(usage, cfg.options || [], [
-      {
+    const opts = [].concat(usage, cfg.options || []);
+    if (this.autoHelp)
+      opts.push({
         name: "help",
         alias: "h",
         type: Boolean,
         description: "Display help",
         group: "_system"
-      }
-    ]);
+      });
     opts.forEach((o) => this.option(o));
     if (cfg.arguments && cfg.subcommands)
       throw new Error("Commands with subcommands cannot have arguments");
     if (cfg.arguments)
       this.argument(cfg.arguments);
-    this.getSubcommands();
-    Object.entries(this.promptTypes).forEach(([k, v]) => {
-      inquirer_default.registerPrompt(k, v);
-    });
+    const subcommands = cfg.subcommands;
+    if (Array.isArray(subcommands)) {
+      subcommands.forEach((subcmd) => this.subcommand(subcmd));
+    } else if (typeof subcommands === "object") {
+      Object.entries(subcommands).forEach(
+        ([k, v]) => this.subcommand(v, k)
+      );
+    }
+    Object.entries(this.promptTypes).forEach(
+      ([k, v]) => inquirer_default.registerPrompt(k, v)
+    );
     return this;
   }
   /**
@@ -54208,6 +54215,39 @@ var Command = (_class3 = class {
    * @returns {Command}   Command instance (for chainability)
    */
   async parse(argv) {
+    const parse = this.parseArgv(argv);
+    let { data } = parse;
+    const { details } = parse;
+    const unknown = details.unknown;
+    if (unknown && this.subcommands.length > 0) {
+      const testSubcommand = unknown[0];
+      if (this._subcommands[testSubcommand]) {
+        const cmd = this._subcommands[testSubcommand];
+        unknown.shift();
+        cmd.parse(unknown);
+        return cmd;
+      }
+    }
+    if (this.autoHelp && data.help === true)
+      return this.renderHelp();
+    await this.validateOptions(data);
+    if (this.prompts.length > 0) {
+      const answers = await inquirer_default.prompt(this.prompts, data);
+      let transform = this.transform(answers);
+      if (transform instanceof Promise)
+        transform = await transform;
+      data = details.data = transform;
+    }
+    await this.action(data, details);
+    return this;
+  }
+  /**
+   * Parse argv
+   *
+   * @param {array} argv  argv array
+   * @returns {object}    object containing data & details
+   */
+  parseArgv(argv) {
     if (!argv)
       argv = process.argv;
     const argMix = [].concat(this._arguments, this._options);
@@ -54217,38 +54257,21 @@ var Command = (_class3 = class {
       camelCase: true
     });
     const args = primaryParse._args || {};
-    const all = Object.assign({}, primaryParse._all || primaryParse);
-    Object.keys(primaryParse._args || []).forEach((e) => delete all[e]);
-    const etc = {
-      argv: primaryParse._unknown || [],
-      opts: primaryParse,
+    const opts = primaryParse._opts || {};
+    const unknown = primaryParse._unknown || [];
+    const data = Object.assign({}, primaryParse._all || {});
+    const details = {
+      args,
+      opts,
+      unknown,
+      tags: primaryParse,
       data: {}
     };
-    const fnargs = [args, all, etc];
-    if (primaryParse._unknown && this.subcommands.length > 0) {
-      const testSubcommand = primaryParse._unknown[0];
-      if (this._subcommands[testSubcommand]) {
-        const cmd = this._subcommands[testSubcommand];
-        etc.argv.shift();
-        cmd.parse(etc.argv);
-        return cmd;
-      }
-    }
-    if (all.help === true)
-      return this.generateHelp();
-    await this.validateOptions(etc.opts._all);
-    if (this.prompts.length > 0) {
-      const answers = await inquirer_default.prompt(this.prompts, etc.opts._all);
-      let transform = this.transform(answers);
-      if (transform instanceof Promise)
-        transform = await transform;
-      etc.data = transform;
-    }
-    await this.action(...fnargs);
-    return this;
+    return { data, details };
   }
   /**
    * Validate any arguments or options that have a `validate` property
+   *
    * @param {object} data   Data object to validate against
    * @returns {boolean}     True if successful
    */
@@ -54269,10 +54292,29 @@ var Command = (_class3 = class {
     return true;
   }
   /**
+   * Apply a tag to the passed option or argument
+   *
+   * @param {object} obj  arg/opt object
+   * @param {string} tag  tag to be applied
+   * @returns {object}    updated arg/opt object
+   */
+  tag(obj, tag) {
+    let groups = [tag];
+    if (obj.group) {
+      if (Array.isArray(obj.group)) {
+        groups = [].concat(groups, obj.group);
+      } else {
+        groups.push(obj.group);
+      }
+    }
+    obj.group = groups;
+    return obj;
+  }
+  /**
    * Add an argument
    *
    * @param {object} arg  Argument object
-   * @returns
+   * @returns {Command}   Command instance (for chainability)
    */
   argument(arg) {
     arg = {
@@ -54280,11 +54322,11 @@ var Command = (_class3 = class {
         name: arg.name,
         subcommand: false,
         defaultOption: true,
-        multiple: false,
-        group: "_args"
+        multiple: false
       },
       ...arg
     };
+    arg = this.tag(arg, "_args");
     this._arguments.push(arg);
     return this;
   }
@@ -54297,6 +54339,7 @@ var Command = (_class3 = class {
   option(opt) {
     if (!opt.name)
       throw new Error("Options require name");
+    opt = this.tag(opt, "_opts");
     const match = this._options.findIndex(({ name }) => name === opt.name);
     if (match !== -1) {
       this._options[match] = { ...this._options[match], ...opt };
@@ -54311,9 +54354,9 @@ var Command = (_class3 = class {
    * @param {Command} command Subcommand instance
    * @returns {Command} Command instance (for chainability)
    */
-  subcommand(command) {
+  subcommand(command, name) {
     command._commandStack = [].concat(this._commandStack, command._commandStack);
-    this._subcommands[command.command] = command;
+    this._subcommands[name || command.command] = command;
     return this;
   }
   /**
@@ -54324,46 +54367,33 @@ var Command = (_class3 = class {
   getCommandStack() {
     return this._commandStack;
   }
-  /**
-   * Retrieve the list of available subcommands
-   *
-   * @returns {array}   Array of subcommands
-   */
-  getSubcommands() {
-    if (this.subcommands.length === 0)
-      return [];
-    const subcommands = [];
-    this.subcommands.forEach((subcommand) => this.subcommand(subcommand));
-    return subcommands;
-  }
-  __init18() {this.transform = async (data) => data}
+  __init21() {this.transform = async (data) => data}
   /**
    * Method to trigger once processed
    *
-   * @param {object} args   Arguments
-   * @param {object} opts   Options
-   * @param {object} etc    Complete object of parsed data
+   * @param {object} data       raw data object
+   * @param {object} details    complete object of parsed data
    */
-  async action(args, opts, etc) {
-    this.generateHelp();
+  async action(data, details) {
+    this.renderHelp();
   }
   /**
-   * Generate and output help
+   * Generate help text
    */
   generateHelp() {
     const sections = [];
     let content = this.description;
-    const additionalHelp = this.additionalHelp ? "\n\n" + this.additionalHelp : "";
-    if (this.help) {
-      content += "\n" + this.help + additionalHelp;
+    const addedHelp = this.addedHelp ? "\n\n" + this.addedHelp : "";
+    if (this.helpText) {
+      content += "\n" + this.helpText + addedHelp;
       sections.push({
-        header: this.title || `Command: ${this.command}`,
+        header: this.helpTitle || `Command: ${this.command}`,
         content
       });
     } else {
-      content += additionalHelp;
+      content += addedHelp;
       sections.push({
-        header: this.title || `Command: ${this.command}`,
+        header: this.helpTitle || `Command: ${this.command}`,
         content
       });
       const argStr = CommandParser.generateArgString(
@@ -54379,7 +54409,14 @@ var Command = (_class3 = class {
           content: CommandParser.generateCommandList(this._subcommands)
         });
     }
-    console.log(command_line_usage_default(sections));
+    return command_line_usage_default(sections);
+  }
+  /**
+   * Output help text and exit
+   */
+  renderHelp() {
+    const help = this.generateHelp();
+    console.log(help);
     process.exit();
   }
   style(styles32) {
@@ -54395,10 +54432,12 @@ var Command = (_class3 = class {
     return call;
   }
   log(msg, opts = {}) {
+    if (this.silent)
+      return;
     const xopts = { styles: null, type: "log", ...opts };
     console[xopts.type](this.style(xopts.styles)(msg));
   }
-  __init19() {this.out = (msg, opts = {}) => this.log(msg, opts)}
+  __init22() {this.out = (msg, opts = {}) => this.log(msg, opts)}
   error(err, msg, exit = true) {
     const cfg = { type: "error", styles: ["red"] };
     if (msg)
@@ -54409,8 +54448,11 @@ var Command = (_class3 = class {
     if (exit)
       process.exit();
   }
-  __init20() {this.spacer = () => console.log()}
-  __init21() {this.rainbow = (text) => rainbow(text)}
+  __init23() {this.spacer = () => {
+    if (!this.silent)
+      console.log();
+  }}
+  __init24() {this.rainbow = (text) => rainbow(text)}
   heading(msg, opts = {}) {
     const xopts = { styles: "bold", ...opts };
     if ((/* @__PURE__ */ new Date()).getMonth() === 5 && this.fun === true)
@@ -54429,16 +54471,16 @@ init_cjs_shims();
 // src/actions/action.ts
 init_cjs_shims();
 var ScaffoldAction = (_class4 = class {
-  __init22() {this._type = "scaffold:action"}
+  __init25() {this._type = "scaffold:action"}
   
-  __init23() {this.description = ""}
-  
-  
+  __init26() {this.description = ""}
   
   
   
   
-  constructor(cfg) {;_class4.prototype.__init22.call(this);_class4.prototype.__init23.call(this);
+  
+  
+  constructor(cfg) {;_class4.prototype.__init25.call(this);_class4.prototype.__init26.call(this);
     this.name = cfg.name;
     Object.entries(cfg).forEach(([key, value]) => this[key] = value);
   }
@@ -54449,8 +54491,8 @@ var ScaffoldAction = (_class4 = class {
 // src/actions/add.ts
 init_cjs_shims();
 
-var ScaffoldActionAdd = (_class5 = class extends ScaffoldAction {constructor(...args2) { super(...args2); _class5.prototype.__init24.call(this); }
-  __init24() {this.name = "add"}
+var ScaffoldActionAdd = (_class5 = class extends ScaffoldAction {constructor(...args2) { super(...args2); _class5.prototype.__init27.call(this); }
+  __init27() {this.name = "add"}
   async run(action, data, factory) {
     const { force = false, skipIfExists = false } = data;
     factory.ensurePath(_path2.default.dirname(action.target));
@@ -54463,10 +54505,10 @@ var ScaffoldActionAdd = (_class5 = class extends ScaffoldAction {constructor(...
 // src/actions/add-many.ts
 init_cjs_shims();
 
-var ScaffoldActionAddMany = (_class6 = class extends ScaffoldAction {constructor(...args3) { super(...args3); _class6.prototype.__init25.call(this);_class6.prototype.__init26.call(this);_class6.prototype.__init27.call(this); }
-  __init25() {this.name = "add-many"}
-  __init26() {this.description = "Add many files"}
-  __init27() {this.startMessage = "Add files"}
+var ScaffoldActionAddMany = (_class6 = class extends ScaffoldAction {constructor(...args3) { super(...args3); _class6.prototype.__init28.call(this);_class6.prototype.__init29.call(this);_class6.prototype.__init30.call(this); }
+  __init28() {this.name = "add-many"}
+  __init29() {this.description = "Add many files"}
+  __init30() {this.startMessage = "Add files"}
   async run(action, data, factory) {
     const { force = false, skipIfExists = false } = data;
     factory.ensurePath(_path2.default.dirname(action.target));
@@ -54485,9 +54527,9 @@ var ScaffoldActionAddMany = (_class6 = class extends ScaffoldAction {constructor
 // src/actions/context.ts
 init_cjs_shims();
 
-var ScaffoldActionContext = (_class7 = class extends ScaffoldAction {constructor(...args4) { super(...args4); _class7.prototype.__init28.call(this);_class7.prototype.__init29.call(this); }
-  __init28() {this.name = "context"}
-  __init29() {this.description = "Check context"}
+var ScaffoldActionContext = (_class7 = class extends ScaffoldAction {constructor(...args4) { super(...args4); _class7.prototype.__init31.call(this);_class7.prototype.__init32.call(this); }
+  __init31() {this.name = "context"}
+  __init32() {this.description = "Check context"}
   
   async run(action, data, factory) {
     this.factory = factory;
@@ -54527,9 +54569,9 @@ var ScaffoldActionContext = (_class7 = class extends ScaffoldAction {constructor
 
 // src/actions/custom.ts
 init_cjs_shims();
-var ScaffoldActionCustom = (_class8 = class extends ScaffoldAction {constructor(...args5) { super(...args5); _class8.prototype.__init30.call(this);_class8.prototype.__init31.call(this); }
-  __init30() {this.name = "custom"}
-  __init31() {this.description = "Custom action"}
+var ScaffoldActionCustom = (_class8 = class extends ScaffoldAction {constructor(...args5) { super(...args5); _class8.prototype.__init33.call(this);_class8.prototype.__init34.call(this); }
+  __init33() {this.name = "custom"}
+  __init34() {this.description = "Custom action"}
   async run(action, data, factory) {
     if (!action.run)
       throw new Error("No run() method provided");
@@ -54539,8 +54581,8 @@ var ScaffoldActionCustom = (_class8 = class extends ScaffoldAction {constructor(
 
 // src/actions/modify.ts
 init_cjs_shims();
-var ScaffoldActionModify = (_class9 = class extends ScaffoldAction {constructor(...args6) { super(...args6); _class9.prototype.__init32.call(this); }
-  __init32() {this.name = "modify"}
+var ScaffoldActionModify = (_class9 = class extends ScaffoldAction {constructor(...args6) { super(...args6); _class9.prototype.__init35.call(this); }
+  __init35() {this.name = "modify"}
   async run(action, data, factory) {
     const { target, pattern, template: template2, transform } = action;
     const exists = await factory.fileExists(target);
@@ -54566,20 +54608,20 @@ var inTest = process.env.NODE_ENV === "test";
 var Scaffold = (_class10 = class extends Command {
   
   
-  __init33() {this.actions = []}
-  __init34() {this.actionTypes = {}}
-  __init35() {this._actionTypes = {
+  __init36() {this.actions = []}
+  __init37() {this.actionTypes = {}}
+  __init38() {this._actionTypes = {
     add: ScaffoldActionAdd,
     addMany: ScaffoldActionAddMany,
     context: ScaffoldActionContext,
     custom: ScaffoldActionCustom,
     modify: ScaffoldActionModify
   }}
-  __init36() {this.mod = Factory.mod}
+  __init39() {this.mod = Factory.mod}
   constructor(cfg) {
     if (!cfg.command)
       cfg.command = cfg.name;
-    super(cfg);_class10.prototype.__init33.call(this);_class10.prototype.__init34.call(this);_class10.prototype.__init35.call(this);_class10.prototype.__init36.call(this);;
+    super(cfg);_class10.prototype.__init36.call(this);_class10.prototype.__init37.call(this);_class10.prototype.__init38.call(this);_class10.prototype.__init39.call(this);;
     this.cwd = process.cwd();
     this.scaffoldDir = cfg.scaffoldDir || __dirname;
     this.registerActionTypes(cfg.actionTypes);
@@ -54587,7 +54629,7 @@ var Scaffold = (_class10 = class extends Command {
       this.actions = cfg.actions;
     return this;
   }
-  registerActionTypes(actionTypes = []) {
+  registerActionTypes(actionTypes = {}) {
     Object.entries(actionTypes).forEach(([name, actionType]) => {
       this._actionTypes[name] = actionType;
     });
@@ -54595,16 +54637,15 @@ var Scaffold = (_class10 = class extends Command {
   /**
    * Method to trigger once processed
    *
-   * @param {object} args   Arguments
-   * @param {object} opts   Options
-   * @param {object} etc    Complete object of parsed data
+   * @param {object} data       raw data object
+   * @param {object} details    complete object of parsed data
    */
-  async action(args, opts, etc) {
-    if (opts.help)
-      return this.generateHelp();
+  async action(data, details) {
+    if (this.autoHelp && data.help === true)
+      return this.renderHelp();
     const title = `Running ${this.name} Scaffold`;
     this.heading(title);
-    await this.runActions(etc.data);
+    await this.runActions(data);
   }
   async runActions(data) {
     for await (const action of this.actions) {

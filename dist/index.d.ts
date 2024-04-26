@@ -154,15 +154,14 @@ declare class Scaffold extends Command {
         upperCase: (v: any) => any;
     };
     constructor(cfg: ScaffoldProps);
-    registerActionTypes(actionTypes?: any[]): void;
+    registerActionTypes(actionTypes?: {}): void;
     /**
      * Method to trigger once processed
      *
-     * @param {object} args   Arguments
-     * @param {object} opts   Options
-     * @param {object} etc    Complete object of parsed data
+     * @param {object} data       raw data object
+     * @param {object} details    complete object of parsed data
      */
-    action(args: any, opts: any, etc: any): Promise<void>;
+    action(data: any, details: any): Promise<void>;
     runActions(data: any): Promise<void>;
     runAction(action: any, data: any): Promise<void>;
 }

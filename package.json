@@ -24,14 +24,27 @@
     "lint:prettier:ci": "npm run lint:prettier-script -- --check",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["scaffold", "terminal", "command", "cli", "panda"],
+  "keywords": [
+    "args",
+    "argv",
+    "bin",
+    "cli",
+    "command",
+    "command-line",
+    "console",
+    "panda",
+    "parser",
+    "scaffold",
+    "script",
+    "terminal"
+  ],
   "author": "Adam Puzio <adam@puzio.me>",
   "license": "MIT",
   "homepage": "https://github.com/AdamPuzio/panda-scaffold",
   "bugs": "https://github.com/AdamPuzio/panda-scaffold/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AdamPuzio/panda-command.git"
+    "url": "https://github.com/AdamPuzio/panda-scaffold.git"
   },
   "engines": {
     "node": ">= 18.x.x"
@@ -40,7 +53,7 @@
     "module": "scaffold"
   },
   "devDependencies": {
-    "@panda/command": "^0.1.2",
+    "@panda/command": "^0.1.4",
     "@types/node": "^20.11.30",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

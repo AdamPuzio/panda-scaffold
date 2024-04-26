@@ -43,7 +43,7 @@ export class Scaffold extends Command {
     return this
   }
 
-  registerActionTypes(actionTypes = []) {
+  registerActionTypes(actionTypes = {}) {
     Object.entries(actionTypes).forEach(([name, actionType]) => {
       this._actionTypes[name] = actionType
     })
@@ -52,18 +52,17 @@ export class Scaffold extends Command {
   /**
    * Method to trigger once processed
    *
-   * @param {object} args   Arguments
-   * @param {object} opts   Options
-   * @param {object} etc    Complete object of parsed data
+   * @param {object} data       raw data object
+   * @param {object} details    complete object of parsed data
    */
-  async action(args, opts, etc) {
+  async action(data, details) {
     // if action isn't overwritten, output help
-    if (opts.help) return this.generateHelp()
+    if (this.autoHelp && data.help === true) return this.renderHelp()
 
     const title = `Running ${this.name} Scaffold`
     this.heading(title)
 
-    await this.runActions(etc.data)
+    await this.runActions(data)
   }
 
   async runActions(data) {
