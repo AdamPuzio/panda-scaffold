@@ -57,7 +57,9 @@ declare const Factory: PandaFactory;
 interface ScaffoldProps extends CommandInterface {
     scaffoldDir?: string;
     actions?: ScaffoldActionProps[];
-    actionTypes?: any[];
+    actionTypes?: {
+        [key: string]: any;
+    };
 }
 interface ScaffoldActionProps {
     type: string;

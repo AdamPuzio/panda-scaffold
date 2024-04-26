@@ -46,6 +46,7 @@ const MyCommand = new Scaffold({
 | ------------------------------- | ------------ | --- | ----------- |
 | [`name`](#name)                 | string       | Y   | Command name |
 | [`command`](#command)           | string       | N   | Terminal command to be called (used to enable subcommands) |
+| [`scaffoldDir`](#scaffolddir)   | string       | N   | Directory of local scaffolds |
 | [`arguments`](#arguments)       | object       | N   | Argument parsing definition |
 | [`options`](#options)           | array        | N   | List of options to be parsed |
 | [`subcommands`](#subcommands)   | array,object | N   | List of subcommands to be parsed |
@@ -66,6 +67,10 @@ const MyCommand = new Scaffold({
 Provides the default command to be called when imported, usually as a subcommand.
 
 If not explicitly set, it defaults to `name`.
+
+### `scaffoldDir`
+
+The default directory where your scaffolds are located. This will automatically be prepended to any `source` action params.
 
 ### `arguments`
 

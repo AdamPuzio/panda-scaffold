@@ -3,7 +3,9 @@ import { CommandInterface } from '@panda/command'
 export interface ScaffoldProps extends CommandInterface {
   scaffoldDir?: string
   actions?: ScaffoldActionProps[]
-  actionTypes?: any[]
+  actionTypes?: {
+    [key: string]: any
+  }
 }
 
 export interface ScaffoldActionProps {
