@@ -1,0 +1,73 @@
+{
+  "name": "@panda/scaffold",
+  "version": "0.2.0",
+  "description": "Panda Scaffold class",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "npm run build -- --watch src",
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build:cjs": "tsup src/index.ts --format cjs --dts",
+    "build:esm": "tsup src/index.ts --format esm --dts",
+    "lint": "eslint src",
+    "lint:fix": "eslint --fix src",
+    "lint:prettier": "npm run lint:prettier:script -- --check",
+    "lint:prettier:fix": "npm run lint:prettier:script -- --write",
+    "lint:prettier:ci": "npm run lint:prettier:script -- --check",
+    "lint:prettier:script": "prettier \"src/**/*.{js,jsx,cjs,mjs,ts,tsx}\" --cache",
+    "test": "npm run test:vitest && npm run lint",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest --watch"
+  },
+  "keywords": [
+    "args",
+    "argv",
+    "bin",
+    "cli",
+    "command",
+    "command-line",
+    "console",
+    "panda",
+    "parser",
+    "scaffold",
+    "script",
+    "terminal"
+  ],
+  "author": "Adam Puzio <adam@puzio.me>",
+  "license": "MIT",
+  "homepage": "https://github.com/AdamPuzio/panda-scaffold",
+  "bugs": "https://github.com/AdamPuzio/panda-scaffold/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AdamPuzio/panda-scaffold.git"
+  },
+  "engines": {
+    "node": ">= 18.x.x"
+  },
+  "panda": {
+    "module": "scaffold"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.3.0",
+    "@panda/command": "file:../../command/0.2",
+    "@types/node": "^20.12.12",
+    "eslint": "^9.3.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin": "^1.0.1",
+    "handlebars": "^4.7.8",
+    "listr2": "^8.2.1",
+    "lodash": "^4.17.21",
+    "ora": "^8.0.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
