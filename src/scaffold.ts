@@ -1,5 +1,4 @@
 import path from 'node:path'
-// @ts-expect-error needed for dual-bundling
 import ora from 'ora'
 import { Command } from '@panda/command'
 
@@ -57,7 +56,7 @@ export class Scaffold extends Command {
    */
   async action(data, details) {
     // if action isn't overwritten, output help
-    if (this.autoHelp && data.help === true) return this.renderHelp()
+    if (this.autoHelp && data.help === true) return this.outputHelp()
 
     const title = `Running ${this.name} Scaffold`
     this.heading(title)
@@ -114,7 +113,16 @@ export class Scaffold extends Command {
       const successMsg = await actionInstance.run(action, data, factory)
       spinner.succeed(
         factory.path(
-          action.successMessage || successMsg || actionInstance.successMessage,
+          // Pre-existing bug fix: all three of these are commonly
+          // undefined (no action.run() implementation returns a value,
+          // and neither successMessage is typically configured), which
+          // made `factory.path(undefined)` -> `Handlebars.compile
+          // (undefined)` throw unconditionally on every successful action
+          // that didn't happen to set one — unrelated to the kernel
+          // retrofit; this path was apparently never previously
+          // exercised. Falls back to `actionType`, matching the
+          // `startMessage` line just above.
+          action.successMessage || successMsg || actionInstance.successMessage || actionType,
         ),
       )
     } catch (err) {

@@ -1,6 +1,6 @@
-import { CommandInterface } from '@panda/command'
+import { CommandProps } from '@panda/command'
 
-export interface ScaffoldProps extends CommandInterface {
+export interface ScaffoldProps extends CommandProps {
   scaffoldDir?: string
   actions?: ScaffoldActionProps[]
   actionTypes?: {
