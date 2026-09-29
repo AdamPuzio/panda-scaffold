@@ -1,6 +1,6 @@
 {
   "name": "@panda/scaffold",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Scaffold creation library",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -53,7 +53,7 @@
     "module": "scaffold"
   },
   "devDependencies": {
-    "@panda/command": "^0.1.4",
+    "@panda/command": "^0.2.1",
     "@types/node": "^20.11.30",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

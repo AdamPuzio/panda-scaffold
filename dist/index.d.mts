@@ -1,4 +1,4 @@
-import { CommandInterface, Command } from '@panda/command';
+import { CommandProps, Command } from '@panda/command';
 
 declare class PandaFactory {
     __clone: boolean;
@@ -54,7 +54,7 @@ declare class PandaFactory {
 }
 declare const Factory: PandaFactory;
 
-interface ScaffoldProps extends CommandInterface {
+interface ScaffoldProps extends CommandProps {
     scaffoldDir?: string;
     actions?: ScaffoldActionProps[];
     actionTypes?: {
@@ -92,6 +92,13 @@ declare class ScaffoldAction {
     errorMessage?: string;
     constructor(cfg: any);
     run(action: any, data: any, factory: any): Promise<void>;
+    /** Pre-existing bug fix: scaffold.ts's runAction() calls
+     *  `actionInstance.when(...)` to decide whether to skip an action, but
+     *  this base class never defined it — every action execution was
+     *  already broken (`when is not a function`) before this fix, unrelated
+     *  to the kernel retrofit. Default: always proceed, matching the
+     *  evident intent (conditional skip logic subclasses can override). */
+    when(action: any, data: any, factory: any): Promise<boolean>;
 }
 
 declare class ScaffoldActionAdd extends ScaffoldAction {
