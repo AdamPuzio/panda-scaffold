@@ -2,7 +2,7 @@ import path from 'node:path'
 import ora from 'ora'
 import { Command } from '@panda/command'
 
-import { Factory } from './factory'
+import { Factory } from '@panda/factory'
 import { FactoryCloneConfig, ScaffoldProps } from './scaffold.types'
 
 import {

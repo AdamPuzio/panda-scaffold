@@ -1,58 +1,5 @@
+export { Factory, PandaFactory } from '@panda/factory';
 import { CommandProps, Command } from '@panda/command';
-
-declare class PandaFactory {
-    __clone: boolean;
-    _: {};
-    mod: {
-        kebabCase: (v: any) => any;
-        dashCase: (v: any) => any;
-        titleCase: (v: any) => any;
-        camelCase: (v: any) => any;
-        pascalCase: (v: any) => any;
-        snakeCase: (v: any) => any;
-        envCase: (v: any) => any;
-        dotCase: (v: any) => any;
-        pathCase: (v: any) => any;
-        namespaceCase: (v: any) => any;
-        sentenceCase: (v: any) => any;
-        lowerCase: (v: any) => any;
-        upperCase: (v: any) => any;
-    };
-    data: {};
-    constructor(cfg?: any);
-    clone(cfg: any): PandaFactory;
-    render(str: any, data?: any): string;
-    path(dir: any, data?: any): string;
-    ensurePath(dir: any): string;
-    fileExists(file: any): Promise<boolean>;
-    list(dir: any, opts?: {}): Promise<any>;
-    readFile(file: any): Promise<string>;
-    /**
-     * Write contents to a file
-     *
-     * @param file                file to write to
-     * @param output              contents to write to file
-     * @param opts
-     * @param opts.force          flag to forcefully write to the file even if the file already exists
-     * @param opts.skipIfExists   flag to skip the file if it exists
-     * @param opts.encoding       encoding of file
-     * @returns
-     */
-    writeFile(file: any, output: any, opts?: any): Promise<void>;
-    readJsonFile(file: any): Promise<any>;
-    writeJsonFile(file: any, json: any): Promise<void>;
-    openBrowser(url: any): void;
-    /**
-     * Runs a command
-     *
-     * @param {String} cmd              command to run
-     * @param {Object} opts             options
-     * @param {boolean} opts.stream     stream output
-     * @returns
-     */
-    runCommand(cmd: any, opts: any): Promise<any>;
-}
-declare const Factory: PandaFactory;
 
 interface ScaffoldProps extends CommandProps {
     scaffoldDir?: string;
@@ -175,4 +122,4 @@ declare class Scaffold extends Command {
     runAction(action: any, data: any): Promise<void>;
 }
 
-export { Factory, type FactoryCloneConfig, Scaffold, ScaffoldAction, ScaffoldActionAdd, ScaffoldActionAddMany, ScaffoldActionContext, ScaffoldActionCustom, ScaffoldActionModify, type ScaffoldActionProps, type ScaffoldActionTypeProps, type ScaffoldProps };
+export { type FactoryCloneConfig, Scaffold, ScaffoldAction, ScaffoldActionAdd, ScaffoldActionAddMany, ScaffoldActionContext, ScaffoldActionCustom, ScaffoldActionModify, type ScaffoldActionProps, type ScaffoldActionTypeProps, type ScaffoldProps };
