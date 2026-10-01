@@ -10,6 +10,8 @@ export class ScaffoldActionAddMany extends ScaffoldAction {
 
   async run(action, data, factory) {
     const { force = false, skipIfExists = false } = data
+    // See add.ts for why this translates to a single `ifExists` policy.
+    const ifExists = skipIfExists ? 'skip' : force ? 'overwrite' : 'throw'
 
     // ensure the base target path exists
     factory.ensurePath(path.dirname(action.target))
@@ -23,7 +25,7 @@ export class ScaffoldActionAddMany extends ScaffoldAction {
       factory.ensurePath(path.dirname(targetPath))
       const contents = await factory.readFile(file)
       const output = factory.render(contents)
-      await factory.writeFile(targetPath, output, { force, skipIfExists })
+      await factory.writeFile(targetPath, output, { ifExists })
     }
   }
 }

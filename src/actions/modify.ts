@@ -25,6 +25,6 @@ export class ScaffoldActionModify extends ScaffoldAction {
       contents = transform(contents, data, factory)
       if (contents instanceof Promise) contents = await contents
     }
-    await factory.writeFile(target, contents, { force: true })
+    await factory.writeFile(target, contents, { ifExists: 'overwrite' })
   }
 }
